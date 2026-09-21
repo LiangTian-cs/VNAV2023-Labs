@@ -1,0 +1,33 @@
+# C/C++ build products
+*.o
+*.a
+*.so
+*.out
+
+# Executables/build directories
+**/build/
+**/devel/
+**/logs/
+**/install/
+
+# ROS/catkin generated files
+.catkin_tools/
+
+# Datasets / bags / large generated files
+*.bag
+*.bag.active
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Temporary files
+tmp/
+cache/

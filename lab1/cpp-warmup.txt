@@ -1,0 +1,214 @@
+MIT VNAV 2023 - Lab 1
+C++ Warm-up Exercises
+=====================
+
+1. OPERATORS
+============
+
+1.1
+
+Code:
+
+int i = 0, j;
+j = ++i;
+j = i++;
+
+Answer:
+
+After j = ++i:
+  i = 1
+  j = 1
+
+++i is pre-increment: i is incremented first, then its new value is
+assigned to j.
+
+After j = i++:
+  j receives the current value of i, which is 1.
+  Then i is incremented.
+
+Final values:
+
+  i = 2
+  j = 1
+
+
+1.2
+
+Code:
+
+int i = 42;
+std::string output = (i < 42) ? "a" : "b";
+std::cout << output << std::endl;
+
+Answer:
+
+  b
+
+42 < 42 is false, therefore the conditional operator selects "b".
+
+
+2. REFERENCES AND POINTERS
+==========================
+
+2.1
+
+Code:
+
+int i;
+int& ri = i;
+i = 5;
+ri = 10;
+std::cout << i << " " << ri << std::endl;
+
+Answer:
+
+  10 10
+
+ri is a reference to i. They refer to the same integer object.
+Assigning 10 to ri therefore changes i to 10 as well.
+
+
+2.2
+
+Code:
+
+int i = 42;
+int* j = &i;
+*j = *j**j;
+std::cout << *j << std::endl;
+
+Answer:
+
+  1764
+
+j contains the address of i.
+
+*j = (*j) * (*j)
+   = 42 * 42
+   = 1764
+
+
+2.3
+
+Code:
+
+int i[4] = {42,24,42,24};
+*(i+2) = *(i+1)-i[3];
+std::cout << *(i+2) << std::endl;
+
+Answer:
+
+  0
+
+*(i + 1) is i[1] = 24.
+i[3] = 24.
+
+Therefore:
+
+i[2] = 24 - 24 = 0.
+
+
+2.4
+
+Code:
+
+void reset(int &i) {
+    i = 0;
+}
+
+int j = 42;
+reset(j);
+std::cout << j << std::endl;
+
+Answer:
+
+  0
+
+The function receives j by reference, so assigning i = 0 inside reset()
+modifies the original j.
+
+
+3. NUMBERS
+==========
+
+3.1 What are the differences between int, long, long long, and short?
+
+They are integer types with different minimum ranges and usually different
+storage sizes.
+
+The C++ standard guarantees at least:
+
+  short       >= 16 bits
+  int         >= 16 bits
+  long        >= 32 bits
+  long long   >= 64 bits
+
+and their ranges cannot decrease in the following order:
+
+  short <= int <= long <= long long
+
+The exact size is implementation-dependent.
+
+On a typical 64-bit Linux system:
+
+  short       16 bits
+  int         32 bits
+  long        64 bits
+  long long   64 bits
+
+
+3.2 What are the differences between float and double?
+
+float normally uses single-precision floating point and typically provides
+about 6-7 decimal digits of precision.
+
+double normally uses double-precision floating point and typically provides
+about 15-16 decimal digits of precision.
+
+Code:
+
+int i;
+i = 3.14;
+
+Answer:
+
+  i = 3
+
+Conversion from floating point to integer discards the fractional part
+(truncates toward zero).
+
+
+3.3 What are the differences between unsigned and signed types?
+
+A signed integer type can represent both negative and positive values.
+
+An unsigned integer type represents only non-negative values and uses its
+entire bit range for values >= 0.
+
+For:
+
+unsigned char c = -1;
+
+assuming an 8-bit unsigned char, conversion is modulo 256:
+
+  c = 255
+
+
+3.4
+
+Code:
+
+int i = 42;
+
+if (i) {
+    i = 0;
+} else {
+    i = 43;
+}
+
+Answer:
+
+  i = 0
+
+A non-zero integer evaluates to true in a Boolean context.
+Therefore the first branch executes.
