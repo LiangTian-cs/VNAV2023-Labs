@@ -1,1113 +1,589 @@
-# MIT VNAV 2023 — Lab 2
 
-## Deliverable 1 — Nodes, Topics, and Launch Files
 
-### 1. Nodes in the static scenario
+# MIT VNAV 2023 - Lab 2 Solutions
 
-The static scenario is launched with:
+**Topic:** ROS, TF, rigid-body transformations, and quaternions  
+**Deliverables:** D1-D5 completed; optional D6 not submitted.
 
-    roslaunch two_drones_pkg two_drones.launch static:=True
+This file deliberately uses GitHub-flavored Markdown, ordinary text, and
+plain-text mathematical notation. No MathJax, LaTeX commands, special Markdown
+extensions, or external equation renderers are required. The ROS C++ source
+files are in `two_drones_pkg/src/`.
+
+## Deliverable 1 - Nodes, Topics, and Launch Files (10 points)
+
+### D1.1 - Nodes in the static scenario
+
+Start the static configuration with:
+
+```bash
+roslaunch two_drones_pkg two_drones.launch static:=True
+```
 
 Ignoring `/rosout` and temporary rqt nodes, the relevant nodes are:
 
-- `/av1broadcaster`
-- `/av2broadcaster`
-- `/plots_publisher_node`
-- `/rviz`
+| Node                    | Function                                                |
+| ----------------------- | ------------------------------------------------------- |
+| `/av1broadcaster`       | Static TF publisher for `world -> av1`                  |
+| `/av2broadcaster`       | Static TF publisher for `world -> av2`                  |
+| `/plots_publisher_node` | Looks up transforms and publishes visualization markers |
+| `/rviz`                 | Displays the markers and coordinate frames              |
 
-The first two nodes are instances of `tf2_ros/static_transform_publisher`.
+The two static broadcasters are instances of `tf2_ros/static_transform_publisher`.
+Their translations and orientations are:
 
-They provide the transforms
+```text
+world -> av1: translation = [1, 0, 0], rotation = identity
+world -> av2: translation = [0, 0, 1], rotation = identity
+```
 
-$$
-world \rightarrow av1
-$$
+The TF tree has `world` as the parent of both `av1` and `av2`.
 
-and
+### D1.2 - Starting the static scenario without roslaunch
 
-$$
-world \rightarrow av2.
-$$
+Use separate terminals with the appropriate ROS workspace sourced.
+Start the ROS master first (if it is not already running):
 
-The static transforms used by the launch file are:
+```bash
+roscore
+```
 
-$$
-{}^w p_1 =
-\begin{bmatrix}
-1\\0\\0
-\end{bmatrix},
-\qquad
-{}^w p_2 =
-\begin{bmatrix}
-0\\0\\1
-\end{bmatrix},
-$$
+Then start the two static broadcasters:
 
-with identity orientation.
+```bash
+rosrun tf2_ros static_transform_publisher 1 0 0 0 0 0 1 world av1 __name:=av1broadcaster
+```
 
----
+```bash
+rosrun tf2_ros static_transform_publisher 0 0 1 0 0 0 1 world av2 __name:=av2broadcaster
+```
 
-### 2. Running the static scenario without roslaunch
+Start the marker publisher and RViz in their own terminals:
 
-The equivalent nodes can be launched manually in separate terminals.
+```bash
+rosrun two_drones_pkg plots_publisher_node
+```
 
-AV1 static transform:
+```bash
+rosrun rviz rviz -d "$(rospack find two_drones_pkg)/config/default.rviz"
+```
 
-    rosrun tf2_ros static_transform_publisher 1 0 0 0 0 0 1 world av1 __name:=av1broadcaster
+### D1.3 - Published and subscribed topics
 
-AV2 static transform:
+| Node                    | Publishes                                              | Subscribes / consumes                                        |
+| ----------------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| `/av1broadcaster`       | `/tf_static`: `world -> av1`                           | No user-defined input topic                                  |
+| `/av2broadcaster`       | `/tf_static`: `world -> av2`                           | No user-defined input topic                                  |
+| `/plots_publisher_node` | `/visuals` (`visualization_msgs/MarkerArray`)          | TF data through `tf2_ros::TransformListener`, normally `/tf` and `/tf_static` |
+| `/rviz`                 | Not required to publish a user-defined data topic here | `/visuals` and the relevant TF topics according to enabled displays |
 
-    rosrun tf2_ros static_transform_publisher 0 0 1 0 0 0 1 world av2 __name:=av2broadcaster
+Both drone coordinate frames are published by the static broadcasters.
+The drone meshes are visualization markers published by
+`/plots_publisher_node` on `/visuals`; RViz displays them by subscribing to
+that topic.
 
-Visualization publisher:
+### D1.4 - Omitting `static:=True`
 
-    rosrun two_drones_pkg plots_publisher_node
+The launch file declares:
 
-RViz:
+```xml
+<arg name="static" default="false"/>
+```
 
-    rosrun rviz rviz -d $(rospack find two_drones_pkg)/config/default.rviz
-
----
-
-### 3. Topics
-
-#### `/av1broadcaster`
-
-Publishes the static transform
-
-$$
-world \rightarrow av1
-$$
-
-on:
-
-    /tf_static
-
-#### `/av2broadcaster`
-
-Publishes the static transform
-
-$$
-world \rightarrow av2
-$$
-
-on:
-
-    /tf_static
-
-#### `/plots_publisher_node`
-
-The node contains a `tf2_ros::TransformListener`, so it receives TF data
-from the TF system.
-
-It publishes:
-
-    /visuals
-
-with message type:
-
-    visualization_msgs/MarkerArray
-
-The `/visuals` topic contains the quadrotor mesh markers and the trajectory
-markers displayed by RViz.
-
-#### `/rviz`
-
-RViz subscribes to the visualization and TF information needed by its
-configured displays, in particular:
-
-    /visuals
-    /tf
-    /tf_static
-
-The quadrotor meshes themselves are supplied by the markers published on
-`/visuals`.
-
----
-
-### 4. Effect of omitting `static:=True`
-
-The launch file defines:
-
-    <arg name="static" default="false"/>
-
-Therefore, if `static:=True` is omitted, the value of `static` is false.
-
-The group containing the two static transform publishers is guarded by:
-
-    if="$(arg static)"
-
-so those nodes only run when `static` is true.
-
-The dynamic frame publisher is guarded by:
-
-    unless="$(arg static)"
-
-so `frames_publisher_node` runs when `static` is false.
-
+The static publishers are inside an `if="$(arg static)"` group; the
+`frames_publisher_node` is inside an `unless="$(arg static)"` group.
 Therefore:
 
-- with `static:=True`, AV1 and AV2 have fixed transforms;
-- without it, `frames_publisher_node` publishes the time-varying transforms.
-
-The `plots_publisher_node` and RViz run in both cases.
-
----
-
-# Deliverable 2 — Publishing Transforms
-
-Implemented in:
-
-    two_drones_pkg/src/frames_publisher_node.cpp
-
-The trajectories specified by the problem are
-
-$$
-o_1^w(t)
-=
-\begin{bmatrix}
-\cos t\\
-\sin t\\
-0
-\end{bmatrix},
-$$
-
-and
-
-$$
-o_2^w(t)
-=
-\begin{bmatrix}
-\sin t\\
-0\\
-\cos 2t
-\end{bmatrix}.
-$$
-
-AV1 has
-
-$$
-\phi=0,\qquad
-\theta=0,\qquad
-\psi=t,
-$$
-
-so its rotation with respect to the world is
-
-$$
-R_1^w(t)
-=
-R_z(t)
-=
-\begin{bmatrix}
-\cos t & -\sin t & 0\\
-\sin t & \cos t & 0\\
-0 & 0 & 1
-\end{bmatrix}.
-$$
-
-The second column is
-
-$$
-\begin{bmatrix}
--\sin t\\
-\cos t\\
-0
-\end{bmatrix},
-$$
-
-which is exactly the tangent direction of AV1's circular trajectory.
-
-AV2 undergoes pure translation, therefore
-
-$$
-R_2^w=I_3.
-$$
-
-The implementation was compiled and runtime-tested successfully.
+- With `static:=True`: the two drones keep fixed positions and orientations.
+- With the default `static:=false`: `frames_publisher_node` publishes moving
+  `world -> av1` and `world -> av2` transforms on `/tf`.
+- `plots_publisher_node` and RViz are launched in both cases.
 
 ---
 
-# Deliverable 3 — Looking Up a Transform
+## Deliverable 2 - Publishing Dynamic Transforms (30 points)
 
-Implemented in:
+**Implementation:** `two_drones_pkg/src/frames_publisher_node.cpp`.
 
-    two_drones_pkg/src/plots_publisher_node.cpp
+The ROS node periodically fills two `geometry_msgs::TransformStamped`
+messages and publishes them via a TF broadcaster. Its timer callback runs
+at approximately 50 Hz.
 
-The relevant TF query is
+### D2.1 - AV1 translation in world
 
-    tf_buffer.lookupTransform(ref_frame, dest_frame, ros::Time(0))
+```text
+origin_AV1_in_world(t) = [cos(t), sin(t), 0]^T
+```
 
-which requests the latest available transform describing `dest_frame`
-relative to `ref_frame`.
+AV1 travels on the unit circle in the world x-y plane.
 
-Runtime validation produced all three required trajectories:
+### D2.2 - AV1 orientation in world
 
-- `Trail av1-world`, expressed in `world`;
-- `Trail av2-world`, expressed in `world`;
-- `Trail av2-av1`, expressed in `av1`.
+The roll and pitch are zero; the yaw is the current time `t`:
 
-The `/visuals` topic was observed at approximately 50 Hz and no transform
-lookup errors occurred.
+```text
+roll = 0, pitch = 0, yaw = t
 
----
+R_AV1_to_world(t) = Rz(t)
 
-# Deliverable 4 — Mathematical Derivations
+                    [ cos(t)  -sin(t)  0 ]
+                    [ sin(t)   cos(t)  0 ]
+                    [   0        0     1 ]
+```
 
-## 4.1 AV2 follows a parabola in the world x-z plane
+The second column, `[-sin(t), cos(t), 0]^T`, is the tangent to AV1's
+circle, so the body y-axis points in its direction of travel.
+A TF quaternion can be built from roll, pitch, and yaw using
+`tf2::Quaternion::setRPY(0, 0, t)`.
 
-AV2 has position
+### D2.3 - AV2 translation and orientation
 
-$$
-o_2^w(t)
-=
-\begin{bmatrix}
-\sin t\\
-0\\
-\cos 2t
-\end{bmatrix}.
-$$
+```text
+origin_AV2_in_world(t) = [sin(t), 0, cos(2t)]^T
+R_AV2_to_world(t) = I_3  (identity orientation)
+```
 
-Let
+AV2 translates without rotating. The relative frame structure is:
 
-$$
-x_w=\sin t,
-\qquad
-y_w=0,
-\qquad
-z_w=\cos 2t.
-$$
+```text
+       world
+       /   \
+     av1   av2
+```
 
-Using
-
-$$
-\cos 2t=1-2\sin^2 t,
-$$
-
-and substituting
-
-$$
-x_w=\sin t,
-$$
-
-we obtain
-
-$$
-z_w=1-2x_w^2.
-$$
-
-Therefore AV2 lies in the plane
-
-$$
-y_w=0
-$$
-
-and satisfies
-
-$$
-\boxed{z_w=1-2x_w^2},
-$$
-
-which is a parabola in the world x-z plane.
+The implementation was compiled and tested in the running ROS scenario.
 
 ---
 
-## 4.2 Position of AV2 relative to AV1
+## Deliverable 3 - Looking Up a Relative Transform (30 points)
 
-The homogeneous transformation from AV1 coordinates to world coordinates is
+**Implementation:** `two_drones_pkg/src/plots_publisher_node.cpp`.
 
-$$
-T_1^w
-=
-\begin{bmatrix}
-R_1^w & o_1^w\\
-0_{1\times3} & 1
-\end{bmatrix},
-$$
+The required TF query is:
 
-where
+```cpp
+tf_buffer.lookupTransform(ref_frame, dest_frame, ros::Time(0));
+```
 
-$$
-R_1^w
-=
-\begin{bmatrix}
-\cos t & -\sin t & 0\\
-\sin t & \cos t & 0\\
-0 & 0 & 1
-\end{bmatrix}
-$$
+`ref_frame` is the coordinate system in which the transform is expressed,
+`dest_frame` is the frame being looked up, and `ros::Time(0)` asks for the
+latest available transform.
 
-and
+For example, the AV2 pose relative to AV1 is obtained by the transformation:
 
-$$
-o_1^w
-=
-\begin{bmatrix}
-\cos t\\
-\sin t\\
-0
-\end{bmatrix}.
-$$
+```text
+T_AV2_to_AV1 = inverse(T_AV1_to_world) * T_AV2_to_world
+```
 
-Thus
+Three trajectories were observed:
 
-$$
-T_1^w
-=
-\begin{bmatrix}
-\cos t & -\sin t & 0 & \cos t\\
-\sin t & \cos t & 0 & \sin t\\
-0 & 0 & 1 & 0\\
-0 & 0 & 0 & 1
-\end{bmatrix}.
-$$
+| Marker            | Expressed in | Geometric shape                     |
+| ----------------- | ------------ | ----------------------------------- |
+| `Trail av1-world` | `world`      | Circle in the x-y plane             |
+| `Trail av2-world` | `world`      | Parabolic arc in the x-z plane      |
+| `Trail av2-av1`   | `av1`        | Closed ellipse on an inclined plane |
 
-AV2 has identity orientation, therefore
-
-$$
-T_2^w
-=
-\begin{bmatrix}
-1 & 0 & 0 & \sin t\\
-0 & 1 & 0 & 0\\
-0 & 0 & 1 & \cos 2t\\
-0 & 0 & 0 & 1
-\end{bmatrix}.
-$$
-
-The inverse of $T_1^w$ is
-
-$$
-T_w^1
-=
-(T_1^w)^{-1}
-=
-\begin{bmatrix}
-(R_1^w)^T & -(R_1^w)^T o_1^w\\
-0 & 1
-\end{bmatrix}.
-$$
-
-Since
-
-$$
-(R_1^w)^T
-=
-\begin{bmatrix}
-\cos t & \sin t & 0\\
--\sin t & \cos t & 0\\
-0 & 0 & 1
-\end{bmatrix},
-$$
-
-we have
-
-$$
-(R_1^w)^T o_1^w
-=
-\begin{bmatrix}
-1\\0\\0
-\end{bmatrix}.
-$$
-
-Hence
-
-$$
-T_w^1
-=
-\begin{bmatrix}
-\cos t & \sin t & 0 & -1\\
--\sin t & \cos t & 0 & 0\\
-0 & 0 & 1 & 0\\
-0 & 0 & 0 & 1
-\end{bmatrix}.
-$$
-
-The transformation from AV2 to AV1 is
-
-$$
-T_2^1
-=
-T_w^1 T_2^w.
-$$
-
-Its translation component is
-
-$$
-o_2^1
-=
-(R_1^w)^T
-\left(
-o_2^w-o_1^w
-\right).
-$$
-
-Now
-
-$$
-o_2^w-o_1^w
-=
-\begin{bmatrix}
-\sin t-\cos t\\
--\sin t\\
-\cos 2t
-\end{bmatrix}.
-$$
-
-Therefore
-
-$$
-o_2^1(t)
-=
-\begin{bmatrix}
-\cos t & \sin t & 0\\
--\sin t & \cos t & 0\\
-0 & 0 & 1
-\end{bmatrix}
-\begin{bmatrix}
-\sin t-\cos t\\
--\sin t\\
-\cos 2t
-\end{bmatrix}.
-$$
-
-For the first coordinate,
-
-$$
-x_2^1
-=
-\cos t(\sin t-\cos t)-\sin^2t
-$$
-
-$$
-=
-\sin t\cos t-\cos^2t-\sin^2t
-$$
-
-$$
-=
--1+\sin t\cos t
-$$
-
-$$
-=
--1+\frac{1}{2}\sin 2t.
-$$
-
-For the second coordinate,
-
-$$
-y_2^1
-=
--\sin t(\sin t-\cos t)-\cos t\sin t
-$$
-
-$$
-=
--\sin^2t
-$$
-
-$$
-=
--\frac12+\frac12\cos2t.
-$$
-
-For the third coordinate,
-
-$$
-z_2^1=\cos2t.
-$$
-
-Thus
-
-$$
-\boxed{
-o_2^1(t)
-=
-\begin{bmatrix}
--1+\frac12\sin2t\\
--\frac12+\frac12\cos2t\\
-\cos2t
-\end{bmatrix}
-}.
-$$
+The `/visuals` topic ran at approximately 50 Hz during validation, with no
+transform lookup errors.
 
 ---
 
-## 4.3 Plane containing the relative trajectory
+## Deliverable 4 - Mathematical Derivations (25 points)
 
-From the previous result,
+**Notation:**
 
-$$
-y_2^1
-=
--\frac12+\frac12\cos2t
-$$
+- `o1_w`: origin of AV1 expressed in the world frame.
+- `o2_w`: origin of AV2 expressed in the world frame.
+- `o2_1`: origin of AV2 expressed in the AV1 frame.
+- `T1_w`: homogeneous transformation from AV1 coordinates to world coordinates.
+- `T2_w`: homogeneous transformation from AV2 coordinates to world coordinates.
+- `T2_1`: homogeneous transformation from AV2 coordinates to AV1 coordinates.
+- `^T`: matrix transpose; `^-1`: matrix inverse.
 
-and
+### D4.1 - AV2 moves on a parabolic arc in world
 
-$$
-z_2^1=\cos2t.
-$$
+The world-frame position of AV2 is:
 
-Therefore
+```text
+x_w = sin(t)
+y_w = 0
+z_w = cos(2t)
+```
 
-$$
-2y_2^1=-1+\cos2t,
-$$
+By the double-angle identity:
 
-so
+```text
+cos(2t) = 1 - 2*sin(t)^2
+```
 
-$$
-z_2^1=2y_2^1+1.
-$$
+Substitute `x_w = sin(t)`:
 
-Hence every point of the trajectory satisfies
+```text
+z_w = 1 - 2*x_w^2
+y_w = 0
+```
 
-$$
-\boxed{z_1-2y_1-1=0}.
-$$
+Thus AV2 lies in the world x-z plane and traces a segment of the parabola
+`z_w = 1 - 2*x_w^2`, where `-1 <= x_w <= 1`.
 
-The trajectory therefore lies entirely on the plane
+### D4.2 - AV2 position in the AV1 body frame
 
-$$
-\boxed{\Pi:\ z_1-2y_1-1=0}.
-$$
+First write the two world-frame homogeneous transforms:
 
-A normal vector of this plane is
+```text
+T1_w(t) =
+[ cos(t)  -sin(t)  0  cos(t) ]
+[ sin(t)   cos(t)  0  sin(t) ]
+[    0        0    1     0   ]
+[    0        0    0     1   ]
 
-$$
-n=
-\begin{bmatrix}
-0\\-2\\1
-\end{bmatrix}.
-$$
+T2_w(t) =
+[ 1  0  0     sin(t) ]
+[ 0  1  0       0    ]
+[ 0  0  1    cos(2t) ]
+[ 0  0  0       1    ]
+```
 
----
+For a rigid transform `T = [R, p; 0, 1]`, its inverse is
+`T^-1 = [R^T, -R^T*p; 0, 1]`.
 
-## 4.4 A 2D reference frame on the plane
+The inverse of AV1's transform is:
 
-The center suggested in the assignment is
+```text
+inverse(T1_w) = T_w1 =
+[  cos(t)   sin(t)  0  -1 ]
+[ -sin(t)   cos(t)  0   0 ]
+[     0        0    1   0 ]
+[     0        0    0   1 ]
+```
 
-$$
-p^1=
-\begin{bmatrix}
--1\\
--\frac12\\
-0
-\end{bmatrix}.
-$$
+The relative transform is:
 
-Choose the first in-plane unit axis as
+```text
+T2_1 = inverse(T1_w) * T2_w
+```
 
-$$
-\hat{x}_p
-=
-\begin{bmatrix}
-1\\0\\0
-\end{bmatrix}.
-$$
+Its translation is equivalently:
 
-A second in-plane direction must be orthogonal to the plane normal.
-A convenient choice is
+```text
+o2_1 = transpose(R1_w) * (o2_w - o1_w)
 
-$$
-\hat{y}_p
-=
-\frac{1}{\sqrt5}
-\begin{bmatrix}
-0\\1\\2
-\end{bmatrix}.
-$$
+     = [  cos(t)   sin(t)  0 ]   [ sin(t)-cos(t) ]
+       [ -sin(t)   cos(t)  0 ] * [     -sin(t)   ]
+       [     0        0    1 ]   [     cos(2t)  ]
+```
 
-Finally,
+Work through each coordinate:
 
-$$
-\hat{z}_p
-=
-\hat{x}_p\times\hat{y}_p
-=
-\frac{1}{\sqrt5}
-\begin{bmatrix}
-0\\-2\\1
-\end{bmatrix}.
-$$
+```text
+x_1 = cos(t)*(sin(t)-cos(t)) - sin(t)^2
+    = sin(t)*cos(t) - 1
+    = -1 + (1/2)*sin(2t)
 
-Therefore the rotation from the p frame to AV1 is
+y_1 = -sin(t)*(sin(t)-cos(t)) - cos(t)*sin(t)
+    = -sin(t)^2
+    = -1/2 + (1/2)*cos(2t)
 
-$$
-R_p^1
-=
-\begin{bmatrix}
-1 & 0 & 0\\
-0 & \frac1{\sqrt5} & -\frac2{\sqrt5}\\
-0 & \frac2{\sqrt5} & \frac1{\sqrt5}
-\end{bmatrix}.
-$$
+z_1 = cos(2t)
+```
 
-The homogeneous transformation is
+Therefore the requested position is:
 
-$$
-T_p^1
-=
-\begin{bmatrix}
-R_p^1 & p^1\\
-0 & 1
-\end{bmatrix}.
-$$
+```text
+o2_1(t) = [ -1 + (1/2)*sin(2t),
+             -1/2 + (1/2)*cos(2t),
+              cos(2t) ]^T
+```
 
-Coordinates in the p frame are obtained from
+### D4.3 - Plane containing the relative trajectory
 
-$$
-o_2^p
-=
-(R_p^1)^T
-\left(
-o_2^1-p^1
-\right).
-$$
+From the previous result:
 
-First,
+```text
+y_1 = -1/2 + (1/2)*cos(2t)
+z_1 = cos(2t)
+```
 
-$$
-o_2^1-p^1
-=
-\begin{bmatrix}
-\frac12\sin2t\\
-\frac12\cos2t\\
-\cos2t
-\end{bmatrix}.
-$$
+Eliminate `t`:
 
-Therefore,
+```text
+2*y_1 = -1 + cos(2t)
+z_1 = 2*y_1 + 1
+```
 
-$$
-x_2^p
-=
-\frac12\sin2t.
-$$
+Thus the plane containing the trajectory is:
 
-For the second coordinate,
+```text
+Pi: z_1 - 2*y_1 - 1 = 0
+```
 
-$$
-y_2^p
-=
-\frac1{\sqrt5}
-\left(
-\frac12\cos2t
-\right)
-+
-\frac2{\sqrt5}
-\cos2t
-$$
+Its normal vector is `[0, -2, 1]^T`. Hence the complete relative
+trajectory is planar.
 
-$$
-=
-\frac{\sqrt5}{2}\cos2t.
-$$
+### D4.4 - Define a centered 2D coordinate frame on the plane
 
-For the third coordinate,
+Place the new frame origin at the ellipse center, expressed in AV1:
 
-$$
-z_2^p
-=
--\frac2{\sqrt5}
-\left(
-\frac12\cos2t
-\right)
-+
-\frac1{\sqrt5}\cos2t
-=0.
-$$
+```text
+p_1 = [-1, -1/2, 0]^T
+```
 
-Hence
+Select three mutually orthogonal unit axes:
 
-$$
-\boxed{
-o_2^p(t)
-=
-\begin{bmatrix}
-\frac12\sin2t\\
-\frac{\sqrt5}{2}\cos2t\\
-0
-\end{bmatrix}
-}.
-$$
+```text
+x_hat_p = [1, 0, 0]^T
 
-The zero third coordinate confirms that the trajectory lies in the
-$x_p-y_p$ plane.
+y_hat_p = [0, 1, 2]^T / sqrt(5)
 
----
+z_hat_p = cross(x_hat_p, y_hat_p)
+        = [0, -2, 1]^T / sqrt(5)
+```
 
-## 4.5 Ellipse equation and semi-axes
+The rotation matrix and homogeneous transform from the plane frame to
+AV1 are:
 
-From
+```text
+R_p_to_1 =
+[ 1       0            0      ]
+[ 0    1/sqrt(5)   -2/sqrt(5) ]
+[ 0    2/sqrt(5)    1/sqrt(5) ]
 
-$$
-x_p=\frac12\sin2t,
-$$
+T_p_to_1 =
+[ 1       0            0        -1   ]
+[ 0    1/sqrt(5)   -2/sqrt(5)   -1/2 ]
+[ 0    2/sqrt(5)    1/sqrt(5)    0   ]
+[ 0       0            0         1   ]
+```
 
-we obtain
+Transform the relative position into the plane frame:
 
-$$
-\sin2t=2x_p.
-$$
+```text
+o2_p = transpose(R_p_to_1) * (o2_1 - p_1)
 
-From
+o2_1 - p_1 = [(1/2)*sin(2t), (1/2)*cos(2t), cos(2t)]^T
 
-$$
-y_p=\frac{\sqrt5}{2}\cos2t,
-$$
+x_p = (1/2)*sin(2t)
 
-we obtain
+y_p = (1/sqrt(5))*(1/2)*cos(2t)
+      + (2/sqrt(5))*cos(2t)
+    = (sqrt(5)/2)*cos(2t)
 
-$$
-\cos2t=\frac{2y_p}{\sqrt5}.
-$$
+z_p = (-2/sqrt(5))*(1/2)*cos(2t)
+      + (1/sqrt(5))*cos(2t)
+    = 0
+```
 
-Using
+The coordinates in the new frame are:
 
-$$
-\sin^2 2t+\cos^2 2t=1,
-$$
+```text
+o2_p(t) = [(1/2)*sin(2t), (sqrt(5)/2)*cos(2t), 0]^T
+```
 
-gives
+The vanishing third component confirms the curve lies in the new x-y
+plane, centered at its origin.
 
-$$
-(2x_p)^2+
-\left(
-\frac{2y_p}{\sqrt5}
-\right)^2
-=1.
-$$
+### D4.5 - Ellipse equation and semi-axis lengths
 
-Therefore
+From D4.4:
 
-$$
-\boxed{
-4x_p^2+\frac45y_p^2=1
-}.
-$$
+```text
+sin(2t) = 2*x_p
+cos(2t) = 2*y_p/sqrt(5)
+```
 
-Equivalently,
+Use `sin(2t)^2 + cos(2t)^2 = 1`:
 
-$$
-\boxed{
-\frac{x_p^2}{(1/2)^2}
-+
-\frac{y_p^2}{(\sqrt5/2)^2}
-=1
-}.
-$$
+```text
+(2*x_p)^2 + (2*y_p/sqrt(5))^2 = 1
 
-Thus the two semi-axis lengths are
+4*x_p^2 + (4/5)*y_p^2 = 1
 
-$$
-\boxed{
-a=\frac{\sqrt5}{2},
-\qquad
-b=\frac12
-}.
-$$
+x_p^2/(1/2)^2 + y_p^2/(sqrt(5)/2)^2 = 1
+```
 
-The major axis is along $y_p$ and the minor axis is along $x_p$.
+This is an axis-aligned ellipse with:
+
+```text
+semi-major axis = sqrt(5)/2  (along y_p)
+semi-minor axis = 1/2        (along x_p)
+```
 
 ---
 
-# Deliverable 5 — Quaternion Properties
+## Deliverable 5 - Quaternion Properties (5 points)
 
-We use the convention
+Use the scalar-last convention:
 
-$$
-q=
-\begin{bmatrix}
-q_1\\q_2\\q_3\\q_4
-\end{bmatrix},
-$$
+```text
+q = [q1, q2, q3, q4]^T
+```
 
-where $q_4$ is the scalar component.
+Here `q4` is the scalar component. The matrices defined by the course
+are:
 
-The two matrices are
+```text
+Omega1(q) =
+[  q4  -q3   q2   q1 ]
+[  q3   q4  -q1   q2 ]
+[ -q2   q1   q4   q3 ]
+[ -q1  -q2  -q3   q4 ]
 
-$$
-\Omega_1(q)
-=
-\begin{bmatrix}
-q_4&-q_3&q_2&q_1\\
-q_3&q_4&-q_1&q_2\\
--q_2&q_1&q_4&q_3\\
--q_1&-q_2&-q_3&q_4
-\end{bmatrix},
-$$
+Omega2(q) =
+[  q4   q3  -q2   q1 ]
+[ -q3   q4   q1   q2 ]
+[  q2  -q1   q4   q3 ]
+[ -q1  -q2  -q3   q4 ]
+```
 
-and
+For quaternions `qa` and `qb`, the product satisfies:
 
-$$
-\Omega_2(q)
-=
-\begin{bmatrix}
-q_4&q_3&-q_2&q_1\\
--q_3&q_4&q_1&q_2\\
-q_2&-q_1&q_4&q_3\\
--q_1&-q_2&-q_3&q_4
-\end{bmatrix}.
-$$
+```text
+qa (x) qb = Omega1(qa)*qb = Omega2(qb)*qa
+```
 
-Quaternion multiplication can be written as
+Here `(x)` denotes quaternion multiplication (not the vector cross
+product). `I4` is the 4-by-4 identity matrix.
 
-$$
-q_a\otimes q_b
-=
-\Omega_1(q_a)q_b
-=
-\Omega_2(q_b)q_a.
-$$
-
----
-
-## 5.1 Orthogonality of Omega1 and Omega2
+### D5.1 - Orthogonality of Omega1 and Omega2
 
 The quaternion norm is multiplicative:
 
-$$
-\|q_a\otimes q_b\|
-=
-\|q_a\|\,\|q_b\|.
-$$
+```text
+norm(qa (x) qb) = norm(qa) * norm(qb)
+```
 
-Let $q$ be a unit quaternion and let $x$ be any quaternion vector.
-Then
+Let `q` be a unit quaternion, so `norm(q) = 1`. For every four-component
+quaternion `v`:
 
-$$
-\|\Omega_1(q)x\|
-=
-\|q\otimes x\|
-=
-\|q\|\,\|x\|
-=
-\|x\|.
-$$
+```text
+norm(Omega1(q)*v) = norm(q (x) v)
+                  = norm(q)*norm(v)
+                  = norm(v)
 
-Therefore the linear map $\Omega_1(q)$ preserves the Euclidean norm for
-every $x\in\mathbb{R}^4$.
+norm(Omega2(q)*v) = norm(v (x) q)
+                  = norm(v)*norm(q)
+                  = norm(v)
+```
 
-A real square matrix that preserves the Euclidean norm is orthogonal.
-Hence
+Thus both linear maps preserve the Euclidean norm of every vector in
+four-dimensional space. Since their matrices are square, both are
+orthogonal:
 
-$$
-\boxed{
-\Omega_1(q)^T\Omega_1(q)
-=
-\Omega_1(q)\Omega_1(q)^T
-=
-I_4
-}.
-$$
+```text
+transpose(Omega1(q))*Omega1(q) = I4
+Omega1(q)*transpose(Omega1(q)) = I4
 
-Similarly,
+transpose(Omega2(q))*Omega2(q) = I4
+Omega2(q)*transpose(Omega2(q)) = I4
+```
 
-$$
-\|\Omega_2(q)x\|
-=
-\|x\otimes q\|
-=
-\|x\|\,\|q\|
-=
-\|x\|,
-$$
+Intuitively, left or right multiplication by a unit quaternion is a
+length-preserving transformation.
 
-and therefore
+### D5.2 - Mapping q to the identity quaternion
 
-$$
-\boxed{
-\Omega_2(q)^T\Omega_2(q)
-=
-\Omega_2(q)\Omega_2(q)^T
-=
-I_4
-}.
-$$
+Define the identity quaternion:
 
-The intuitive reason is that multiplication by a unit quaternion does not
-change quaternion norm, so left and right multiplication act as
-norm-preserving linear transformations in $\mathbb{R}^4$.
+```text
+e4 = [0, 0, 0, 1]^T
+```
 
----
+The fourth column of **both** `Omega1(q)` and `Omega2(q)` is `q`. Hence:
 
-## 5.2 Omega1(q)^T q and Omega2(q)^T q
+```text
+Omega1(q)*e4 = q
+Omega2(q)*e4 = q
+```
 
-Let
+By the orthogonality established in D5.1:
 
-$$
-e_4=
-\begin{bmatrix}
-0\\0\\0\\1
-\end{bmatrix}.
-$$
+```text
+transpose(Omega1(q))*q
+  = transpose(Omega1(q))*Omega1(q)*e4
+  = I4*e4
+  = e4
 
-From the definitions of both matrices, their fourth columns are equal to
-$q$. Therefore
+transpose(Omega2(q))*q
+  = transpose(Omega2(q))*Omega2(q)*e4
+  = I4*e4
+  = e4
+```
 
-$$
-\Omega_1(q)e_4=q,
-$$
+Therefore:
 
-and
+```text
+transpose(Omega1(q))*q = transpose(Omega2(q))*q
+                       = [0, 0, 0, 1]^T
+```
 
-$$
-\Omega_2(q)e_4=q.
-$$
+This is the identity rotation quaternion in scalar-last convention.
 
-Since the matrices are orthogonal,
+### D5.3 - Commutation of left and right multiplication operators
 
-$$
-\Omega_1(q)^T\Omega_1(q)=I_4.
-$$
+Let `x`, `y`, and `z` be arbitrary four-component quaternions. By the
+operator definitions:
 
-Multiplying
+```text
+Omega1(x)*z = x (x) z
+Omega2(y)*z = z (x) y
+```
 
-$$
-q=\Omega_1(q)e_4
-$$
+Associativity of quaternion multiplication gives:
 
-from the left by $\Omega_1(q)^T$ gives
+```text
+Omega1(x)*Omega2(y)*z
+  = x (x) (z (x) y)
+  = (x (x) z) (x) y
+  = Omega2(y)*Omega1(x)*z
+```
 
-$$
-\boxed{
-\Omega_1(q)^Tq=e_4
-}.
-$$
+Since this holds for every `z`:
 
-The same argument gives
+```text
+Omega1(x)*Omega2(y) = Omega2(y)*Omega1(x)
+```
 
-$$
-\boxed{
-\Omega_2(q)^Tq=e_4
-}.
-$$
+To prove the transposed version, let the quaternion conjugate of `y` be:
 
-Hence
+```text
+conj(y) = [-y1, -y2, -y3, y4]^T
+```
 
-$$
-\boxed{
-\Omega_1(q)^Tq
-=
-\Omega_2(q)^Tq
-=
-\begin{bmatrix}
-0\\0\\0\\1
-\end{bmatrix}
-}.
-$$
+Direct inspection of the defined matrices shows:
 
-This is the unit quaternion corresponding to the identity rotation.
+```text
+transpose(Omega2(y)) = Omega2(conj(y))
+```
+
+Apply the first commutation identity with `conj(y)` in place of `y`:
+
+```text
+Omega1(x)*transpose(Omega2(y))
+  = Omega1(x)*Omega2(conj(y))
+  = Omega2(conj(y))*Omega1(x)
+  = transpose(Omega2(y))*Omega1(x)
+```
+
+Hence both required commutation identities hold. They rely on the
+**associativity** of quaternion multiplication, not its commutativity.
 
 ---
 
-## 5.3 Commutation of the two operators
+## Optional Deliverable 6 - Intrinsic vs. Extrinsic Rotations
 
-Let $z\in\mathbb{R}^4$ be arbitrary.
+D6 is optional (+20 points) and was **not** included in this submission.
 
-Because $\Omega_1(x)$ represents left quaternion multiplication by $x$,
+## Completion and Reproducibility Notes
 
-$$
-\Omega_1(x)z=x\otimes z.
-$$
+| Required deliverable               | Status                       | Where to inspect                                     |
+| ---------------------------------- | ---------------------------- | ---------------------------------------------------- |
+| D1 - ROS nodes, topics, and launch | Completed                    | `two_drones_pkg/launch/two_drones.launch`; this file |
+| D2 - Dynamic transforms            | Completed and runtime-tested | `two_drones_pkg/src/frames_publisher_node.cpp`       |
+| D3 - Relative transform lookup     | Completed and runtime-tested | `two_drones_pkg/src/plots_publisher_node.cpp`        |
+| D4 - Mathematical derivations      | Completed                    | This file, D4.1-D4.5                                 |
+| D5 - Quaternion proofs             | Completed                    | This file, D5.1-D5.3                                 |
 
-Because $\Omega_2(y)$ represents right multiplication by $y$,
-
-$$
-\Omega_2(y)z=z\otimes y.
-$$
-
-Therefore
-
-$$
-\Omega_1(x)\Omega_2(y)z
-=
-x\otimes(z\otimes y).
-$$
-
-Quaternion multiplication is associative, so
-
-$$
-x\otimes(z\otimes y)
-=
-(x\otimes z)\otimes y.
-$$
-
-Thus
-
-$$
-(x\otimes z)\otimes y
-=
-\Omega_2(y)\Omega_1(x)z.
-$$
-
-Since this holds for every $z$,
-
-$$
-\boxed{
-\Omega_1(x)\Omega_2(y)
-=
-\Omega_2(y)\Omega_1(x)
-}.
-$$
-
-Now define the quaternion conjugate
-
-$$
-\bar y=
-\begin{bmatrix}
--y_1\\
--y_2\\
--y_3\\
-y_4
-\end{bmatrix}.
-$$
-
-Directly from the definition of $\Omega_2$,
-
-$$
-\Omega_2(y)^T=\Omega_2(\bar y).
-$$
-
-The first commutation result is valid for every vector in
-$\mathbb{R}^4$, so it also holds for $\bar y$:
-
-$$
-\Omega_1(x)\Omega_2(\bar y)
-=
-\Omega_2(\bar y)\Omega_1(x).
-$$
-
-Substituting
-
-$$
-\Omega_2(\bar y)=\Omega_2(y)^T
-$$
-
-gives
-
-$$
-\boxed{
-\Omega_1(x)\Omega_2(y)^T
-=
-\Omega_2(y)^T\Omega_1(x)
-}.
-$$
-
-This completes Deliverable 5.
-
----
-
-# Required Lab 2 Status
-
-- Deliverable 1: complete
-- Deliverable 2: complete and runtime-tested
-- Deliverable 3: complete and runtime-tested
-- Deliverable 4: complete
-- Deliverable 5: complete
-- Deliverable 6: optional, not included
-
-The required Lab 2 deliverables are complete.
+Build and runtime verification evidence is recorded separately in
+`VALIDATION.md`. These plain-text derivations have the same mathematical
+content as the typeset Lab 2 report; use the typeset report when formally
+submitting mathematical working if required by the instructor.
