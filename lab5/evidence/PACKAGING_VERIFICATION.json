@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "clean_build": true,
+  "runtime_smoke": true,
+  "original_005_unchanged": true,
+  "all_cpp_unchanged": true,
+  "submission_worktree_status_unchanged": true,
+  "pdf_sha256": "923c4b34e0ab46172a3a1a76b3fd98884918617e0dfe912f8decb3ce20b0c90e",
+  "full_bag_evidence_source": "005 (not re-run for packaging-only 006)",
+  "git_add_commit_push_performed": false
+}

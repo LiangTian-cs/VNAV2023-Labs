@@ -1,0 +1,7 @@
+{
+  "circle_tangency_residual": 0.0,
+  "ellipse_tangency_residual": 1.0658141036401503e-14,
+  "finite_vanishing_limit_error": 2.80713365928343e-08,
+  "pass_checks": true,
+  "qualification": "Numerical consistency only; general proof is in theory/D1_D2_DERIVATIONS.md"
+}

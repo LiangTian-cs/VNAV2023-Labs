@@ -1,0 +1,9 @@
+*.bag
+*.bag.active
+build/
+devel/
+install/
+__pycache__/
+*.pyc
+.DS_Store
+run-output/

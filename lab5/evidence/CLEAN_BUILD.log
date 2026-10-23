@@ -1,0 +1,124 @@
+CMake Deprecation Warning at CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- The C compiler identification is GNU 15.3.0
+-- The CXX compiler identification is GNU 15.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /root/autodl-tmp/vnav2023/envs/vnav-vision/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /root/autodl-tmp/vnav2023/envs/vnav-vision/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Using CATKIN_DEVEL_PREFIX: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/devel
+-- Using CMAKE_PREFIX_PATH: /root/autodl-tmp/vnav2023/envs/vnav-vision
+-- This workspace overlays: /root/autodl-tmp/vnav2023/envs/vnav-vision
+CMake Warning (dev) at /root/autodl-tmp/vnav2023/envs/vnav-vision/share/catkin/cmake/python.cmake:4 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+Call Stack (most recent call first):
+  /root/autodl-tmp/vnav2023/envs/vnav-vision/share/catkin/cmake/all.cmake:164 (include)
+  /root/autodl-tmp/vnav2023/envs/vnav-vision/share/catkin/cmake/catkinConfig.cmake:20 (include)
+  CMakeLists.txt:58 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /root/autodl-tmp/vnav2023/envs/vnav-vision/bin/python (found suitable version "3.12.14", minimum required is "3.12")
+-- Using PYTHON_EXECUTABLE: /root/autodl-tmp/vnav2023/envs/vnav-vision/bin/python
+-- Using default Python package layout
+-- Found PY_em: /root/autodl-tmp/vnav2023/envs/vnav-vision/lib/python3.12/site-packages/em.py
+-- Using empy: /root/autodl-tmp/vnav2023/envs/vnav-vision/lib/python3.12/site-packages/em.py
+-- Using CATKIN_ENABLE_TESTING: ON
+-- Call enable_testing()
+-- Using CATKIN_TEST_RESULTS_DIR: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/build/test_results
+-- Forcing gtest/gmock from source, though one was otherwise available.
+-- Found gtest sources under '/usr/src/googletest': gtests will be built
+-- Found gmock sources under '/usr/src/googletest': gmock will be built
+CMake Deprecation Warning at /usr/src/googletest/CMakeLists.txt:4 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at /usr/src/googletest/googlemock/CMakeLists.txt:47 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at /usr/src/googletest/googletest/CMakeLists.txt:58 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Found Python: /root/autodl-tmp/vnav2023/envs/vnav-vision/bin/python3.12 (found version "3.12.14") found components: Interpreter
+-- Found Threads: TRUE
+-- Using Python nosetests: /root/autodl-tmp/vnav2023/envs/vnav-vision/bin/nosetests
+-- catkin 0.8.12
+-- BUILD_SHARED_LIBS is on
+-- BUILD_SHARED_LIBS is on
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- ~~  traversing 1 packages in topological order:
+-- ~~  - lab_5
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- +++ processing catkin package: 'lab_5'
+-- ==> add_subdirectory(feature_tracking)
+CMake Deprecation Warning at feature_tracking/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Found OpenCV: /root/autodl-tmp/vnav2023/envs/vnav-vision (found suitable version "4.13.0", minimum required is "4.4")
+-- Configuring done (4.5s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_POLICY_VERSION_MINIMUM
+
+
+-- Build files have been written to: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/build
+[ 16%] Building CXX object feature_tracking/CMakeFiles/feature_trackers.dir/src/sift_feature_tracker.cpp.o
+[ 33%] Building CXX object feature_tracking/CMakeFiles/feature_trackers.dir/src/feature_tracker.cpp.o
+[ 50%] Building CXX object feature_tracking/CMakeFiles/feature_trackers.dir/src/lk_feature_tracker.cpp.o
+[ 66%] Linking CXX shared library /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/devel/lib/libfeature_trackers.so
+[ 66%] Built target feature_trackers
+[ 83%] Building CXX object feature_tracking/CMakeFiles/track_features.dir/src/course_entry.cpp.o
+[100%] Linking CXX executable /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/devel/lib/lab_5/track_features
+[100%] Built target track_features
+Base path: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws
+Source space: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/src
+Build space: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/build
+Devel space: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/devel
+Install space: /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/install
+Creating symlink "/root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/src/CMakeLists.txt" pointing to "/root/autodl-tmp/vnav2023/envs/vnav-vision/share/catkin/cmake/toplevel.cmake"
+####
+#### Running command: "cmake /root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/src -DPYTHON_EXECUTABLE=/root/autodl-tmp/vnav2023/envs/vnav-vision/bin/python -DCMAKE_PREFIX_PATH=/root/autodl-tmp/vnav2023/envs/vnav-vision -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release -DCATKIN_DEVEL_PREFIX=/root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/devel -DCMAKE_INSTALL_PREFIX=/root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/install -G Unix Makefiles" in "/root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/build"
+####
+####
+#### Running command: "make -j4" in "/root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/build"
+####

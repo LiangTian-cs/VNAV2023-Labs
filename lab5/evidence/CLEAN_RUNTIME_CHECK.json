@@ -1,0 +1,33 @@
+{
+  "package_path": "/root/autodl-tmp/vnav2023/lab5/versions/006/validation/ws/src/feature_tracking",
+  "fresh_binary_links_pass": true,
+  "box_pair": {
+    "kp1": "604",
+    "kp2": "969",
+    "raw_matches": "604",
+    "good_matches": "101",
+    "inliers": "79",
+    "inlier_ratio": "0.782178",
+    "descriptor_dim": "128",
+    "geometry_valid": "1"
+  },
+  "readme_pair_command_missing_output_dir": true,
+  "video_launch_parameter_validation_pass": true,
+  "SIFT": {
+    "images": 12,
+    "pairs": 11,
+    "duplicate_rejections": 1,
+    "bad_encoding_rejections": 1,
+    "exact_stamps": true
+  },
+  "LK": {
+    "images": 12,
+    "pairs": 11,
+    "duplicate_rejections": 1,
+    "bad_encoding_rejections": 1,
+    "exact_stamps": true
+  },
+  "runtime_checks_pass": true,
+  "original_005_source_unchanged": true,
+  "build_exit": 0
+}
